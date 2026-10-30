@@ -10,6 +10,11 @@ on:
 env:
   CARGO_TERM_COLOR: always
 
+# Without this the job's GITHUB_TOKEN is read-only (GitHub's default for new repos) and
+# creating the release fails with "Resource not accessible by integration".
+permissions:
+  contents: write
+
 # Two pushes in a row used to race for the same release asset; the last one to finish won.
 concurrency:
   group: angry-birds-120-${{ github.ref }}
