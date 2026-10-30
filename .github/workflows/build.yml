@@ -12,7 +12,7 @@ env:
 
 jobs:
   windows:
-    name: Windows x64 (assets not embedded)
+    name: Windows x64 single-file installer
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -34,7 +34,7 @@ jobs:
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
 
       - name: Format check
-        run: cargo fmt --check
+        run: cargo fmt --all --check
 
       # Lints are advisory here: the 1.2.0 codebase predates strict clippy and still has
       # a handful of style warnings, so this step must not fail the build.
@@ -42,40 +42,43 @@ jobs:
         continue-on-error: true
         run: cargo clippy --all-targets --no-default-features
 
-      # --no-default-features keeps Rovio's 1.2.0.ipa out of the binary and out of the repo.
-      # The game then loads 1.2.0.ipa from its own folder at startup.
-      - name: Build
+      # --no-default-features keeps Rovio's 1.2.0.ipa out of the binary, and the game then
+      # loads 1.2.0.ipa from its own folder at startup.
+      - name: Build game + uninstaller
         run: cargo build --release --no-default-features --target x86_64-pc-windows-gnu
 
-      - name: Package
+      # The installer embeds both binaries, so they have to exist before it is compiled.
+      # Output is one file: AngryBirds_1.2.0_Setup.exe — no zip anywhere.
+      - name: Build single-file installer
         run: |
-          mkdir -p dist
-          cp target/x86_64-pc-windows-gnu/release/angry_birds_1_2.exe dist/AngryBirds_1.2.0.exe
-          cp target/x86_64-pc-windows-gnu/release/uninstall.exe dist/
-          cp INSTALL.bat README.txt dist/ 2>/dev/null || true
-          cd dist && zip -r ../AngryBirds_1.2.0_Windows.zip .
+          mkdir -p installer/payload
+          cp target/x86_64-pc-windows-gnu/release/angry_birds_1_2.exe installer/payload/game.exe
+          cp target/x86_64-pc-windows-gnu/release/uninstall.exe   installer/payload/uninstall.exe
+          cargo build --release --target x86_64-pc-windows-gnu -p angry_birds_setup
+          cp target/x86_64-pc-windows-gnu/release/setup.exe AngryBirds_1.2.0_Setup.exe
+          ls -l AngryBirds_1.2.0_Setup.exe
 
       - uses: actions/upload-artifact@v7
         with:
-          name: AngryBirds-1.2.0-Windows
-          path: AngryBirds_1.2.0_Windows.zip
+          name: AngryBirds-1.2.0-Setup
+          path: AngryBirds_1.2.0_Setup.exe
 
       - name: Attach to release
         if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v3
         with:
-          files: AngryBirds_1.2.0_Windows.zip
+          files: AngryBirds_1.2.0_Setup.exe
           draft: true
           generate_release_notes: true
           body: |
-            Windows x64 build, no game artwork embedded.
+            # Download **`AngryBirds_1.2.0_Setup.exe`** and run it. One file, no zip.
 
-            **Setup:** unzip, then put your own `1.2.0.ipa` next to `AngryBirds_1.2.0.exe`
-            (the release does not contain it — it is Rovio's copyrighted app).
-            Level and physics data are already compiled into the exe.
+            The installer carries the game and the uninstaller inside it. It copies them to
+            `%LOCALAPPDATA%\AngryBirds1_2`, creates the Desktop and Start Menu shortcuts and
+            registers the app in *Settings → Apps*, where it can also be uninstalled.
 
-            **Install:** run `INSTALL.bat` → copies to `%LOCALAPPDATA%\AngryBirds1_2`,
-            adds Desktop / Start Menu shortcuts and an entry in *Settings → Apps*.
+            **You also need `1.2.0.ipa`** — Rovio's app, which cannot be shipped here.
+            Put it next to `AngryBirds_1.2.0_Setup.exe` before running, or pass its path when
+            the installer asks. It gets copied into the install folder.
 
-            **Uninstall:** `uninstall.exe`, or *Settings → Apps → Angry Birds 1.2.0*.
-            Removes the install folder, save data, both registry keys and the shortcuts.
+            Unsigned binary: SmartScreen may warn once → *More info → Run anyway*.
