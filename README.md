@@ -30,17 +30,20 @@ from the game's own `.ipa` archive.
 
 ## Download
 
-Grab `AngryBirds_1.2.0_Windows.zip` from **Releases**:
+One file. No zip, no unzipping twice:
 
 ```
-AngryBirds_1.2.0.exe   the game
-uninstall.exe          the uninstaller
-INSTALL.bat            installs + creates shortcuts
-README.txt             quick start
+AngryBirds_1.2.0_Setup.exe
 ```
 
-You also need `1.2.0.ipa` in the install folder — it is **not** included, because it contains
-Rovio's copyrighted artwork and audio. `gamedata.json` ships inside the executable already.
+Double-click it. The installer carries the game **and** the uninstaller inside it, copies them
+to `%LOCALAPPDATA%\AngryBirds1_2`, creates the Desktop and Start Menu shortcuts and registers
+the app in *Settings → Apps*.
+
+You also need `1.2.0.ipa` — it is **not** shipped, because it contains Rovio's copyrighted
+artwork and audio. Drop it next to `AngryBirds_1.2.0_Setup.exe` before running (it gets copied
+in automatically), or type its path when the installer asks for it.
+`gamedata.json` is compiled into the game already.
 
 > Unsigned binaries: Windows SmartScreen will warn once. Click **More info → Run anyway**,
 > or right-click the file → *Properties* → *Unblock*.
@@ -74,9 +77,11 @@ legitimate copy of the game.
 
 ## Install / uninstall
 
-**Install:** run `INSTALL.bat`. It copies everything to `%LOCALAPPDATA%\AngryBirds1_2`, adds a
-Desktop shortcut and a Start Menu entry, and registers the game in *Settings → Apps*.
-Or just run the game from anywhere — it only needs its `.ipa` beside it.
+**Install:** run `AngryBirds_1.2.0_Setup.exe`. It writes the game, the uninstaller and the
+readme to `%LOCALAPPDATA%\AngryBirds1_2`, adds a Desktop shortcut and a Start Menu folder, and
+registers the game in *Settings → Apps*. Re-running it upgrades in place.
+
+It also accepts flags for scripting: `--silent` (no prompts, no launch) and `--no-launch`.
 
 **Uninstall**, any of:
 
@@ -91,7 +96,7 @@ Removed:
 | `%APPDATA%\AngryBirds1_2_Rust` | save data, stars, highscores, settings |
 | `HKCU\Software\Microsoft\Windows\CurrentVersion\Uninstall\AngryBirds1_2` | *Apps & features* entry |
 | `HKCU\Software\AngryBirds1_2` | settings key |
-| Desktop / Start Menu shortcuts | created by `INSTALL.bat` |
+| Desktop / Start Menu shortcuts | created by the installer |
 
 Nothing outside those paths is touched. Reinstalling starts from a clean save.
 
@@ -116,16 +121,25 @@ Nothing outside those paths is touched. Reinstalling starts from a clean save.
 rustup target add x86_64-pc-windows-gnu
 sudo apt install gcc-mingw-w64-x86-64     # Linux cross compile
 
-# public / CI build: the .ipa is NOT embedded, it is loaded at runtime
+# 1) the game + uninstaller (public/CI build: the .ipa is loaded at runtime)
 cargo build --release --no-default-features --target x86_64-pc-windows-gnu
 
-# private build with the .ipa baked in (needs ../1.2.0.ipa at compile time)
-cargo build --release --target x86_64-pc-windows-gnu
+# 2) the installer embeds those two binaries, so stage them first
+mkdir -p installer/payload
+cp target/x86_64-pc-windows-gnu/release/angry_birds_1_2.exe installer/payload/game.exe
+cp target/x86_64-pc-windows-gnu/release/uninstall.exe   installer/payload/uninstall.exe
+
+# 3) one file out: setup.exe -> AngryBirds_1.2.0_Setup.exe
+cargo build --release --target x86_64-pc-windows-gnu -p angry_birds_setup
 ```
 
 Linux builds need `libasound2-dev`. On Windows drop `--target`.
 
-Output: `angry_birds_1_2.exe` and `uninstall.exe`.
+**Want the truly single file that needs nothing else?** put `1.2.0.ipa` in the repository root
+(or `installer/payload/1.2.0.ipa`) before step 3 — `installer/build.rs` then bakes the archive
+into `setup.exe`, so the one `.exe` installs a fully playable game. Public builds never do this.
+
+Step 1 on its own still gives you `angry_birds_1_2.exe` + `uninstall.exe` for a portable folder.
 
 ## Code map
 
@@ -140,6 +154,8 @@ Output: `angry_birds_1_2.exe` and `uninstall.exe`.
 | `src/pvr.rs` | ~310 | PVR v2 texture decoding |
 | `src/save.rs` | ~150 | save file (JSON) |
 | `src/uninstall.rs` | ~146 | standalone uninstaller (std only) |
+| `installer/src/main.rs` | ~330 | single-file installer: embeds game + uninstaller, writes files, shortcuts, registry (std only) |
+| `installer/build.rs` | ~90 | stages the payload, optionally bakes in `1.2.0.ipa` |
 
 ## Credits
 
