@@ -31,3 +31,7 @@ symphonia = { version = "0.5", default-features = false, features = ["mp3", "pcm
 opt-level = 3
 lto = "thin"
 strip = true
+
+[workspace]
+# installer/ is the single-file setup.exe: the game and the uninstaller are embedded in it.
+members = ["installer"]
