@@ -1,6 +1,35 @@
-MIT License
+Angry Birds 1.2.0 (Rust rebuild)
+===============================
 
-Copyright (c) 2026 Shohail Mahmud 
+Copyright (c) 2026 Shohail Mahmud
+
+Original game, artwork, audio, fonts, level design, characters and all related
+trademarks:
+
+    Copyright (c) Rovio Entertainment. All rights reserved.
+
+
+WHAT THIS MEANS
+---------------
+
+This repository is only a Rust reimplementation of the game engine, written by
+Shohail Mahmud. Nothing in it originates from Rovio except the 1.2.0.ipa file,
+which is Rovio's copyrighted application and is included here solely so the
+rebuild can run.
+
+All rights to Angry Birds belong to Rovio Entertainment. That includes the name,
+the logo, the bird and pig characters, every sprite, texture, sound effect,
+music track, font and level layout. Shohail Mahmud claims no ownership of any of
+it and no affiliation with Rovio.
+
+The MIT license below covers Shohail Mahmud's own source code and nothing else.
+It grants no rights to the original game, its assets, its name or its
+trademarks. If Rovio asks for this project or the 1.2.0.ipa file to be taken
+down, it will be removed.
+
+
+MIT License
+-----------
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
