@@ -3,8 +3,10 @@
 *.pdb
 *.exe
 *.zip
-*.ipa
 .DS_Store
 
 # staged binaries the installer embeds (built, never committed)
 installer/payload/
+
+# 1.2.0.ipa IS committed on purpose: the installer embeds it, so people who download
+# AngryBirds_1.2.0_Setup.exe can install and play without supplying anything.
