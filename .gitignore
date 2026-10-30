@@ -5,3 +5,6 @@
 *.zip
 *.ipa
 .DS_Store
+
+# staged binaries the installer embeds (built, never committed)
+installer/payload/
