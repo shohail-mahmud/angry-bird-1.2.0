@@ -1,105 +1,41 @@
-# Angry Birds 1.2.0 — Rust rebuild
+# Angry Birds 1.2.0 (Rust rebuild)
 
-A complete, from-scratch reimplementation of **Angry Birds 1.2.0 (February 2010)** for Windows,
-written in Rust. All 105 levels, the original artwork, sounds and bitmap fonts, read straight
-from the game's own `.ipa` archive.
+A from scratch reimplementation of **Angry Birds 1.2.0 (February 2010)** for Windows, written in
+Rust. All 105 levels with the original artwork, sounds and bitmap fonts.
 
 ![Rust](https://img.shields.io/badge/Rust-1.75%2B-orange)
 ![Platform](https://img.shields.io/badge/platform-Windows%20x64-0078D6)
 ![License](https://img.shields.io/badge/license-MIT-green)
 
 > Unofficial fan project, made for preservation. *Angry Birds* and *Rovio* are trademarks of
-> Rovio Entertainment — all original artwork, audio, fonts and level design belong to them.
+> Rovio Entertainment - all original artwork, audio, fonts and level design belong to them.
 > No affiliation and no endorsement is claimed, and everything here is credited to Rovio.
 > The installer is self-contained: **download one `.exe`, install, play.**
 
----
+## Features
 
-## What's implemented
+* **105 levels** across 5 chapters: Poached Eggs, Mighty Hoax, Danger Above, The Big Setup,
+  Ham 'Em High
+* **Physics** on Rapier2D with a fixed 60 Hz timestep, so slow frames never make towers collapse
+* **All bird types** with their special abilities
+* **Original rendering**: sprite sheets, PVR and PNG textures, bitmap fonts, parallax backgrounds
+  and ground cross sections
+* **Audio**: WAV sound effects and MP3 music
+* **Save data**: progress, stars, highscores, seen tutorials, mute and interface scale
+* **Camera**: height fit framing like the original, free zoom out to 0.25x, panning by mouse or
+  keyboard, automatic follow of a shot bird
 
-- **105 levels** across 5 chapters (Poached Eggs, Mighty Hoax, Danger Above, The Big Setup, Ham 'Em High)
-- **Physics** — Rapier2D rigid bodies, fixed 60 Hz timestep with a catch-up accumulator so slow
-  frames don't collapse towers
-- **All bird types** with their special abilities (`Space` mid-flight)
-- **Original rendering** — sprite sheets (`.dat`), PVR/RGBA4444 and PNG textures, bitmap fonts,
-  parallax backgrounds and ground cross-sections taken from the game data
-- **Audio** — WAV sound effects and MP3 music decoded at runtime with symphonia
-- **Save data** — progress, stars, highscores, seen tutorials, mute and UI scale
-- **Camera** — height-fit framing like the original, free zoom out to 0.25×, mouse drag / keys
-  to pan, automatic follow of a shot bird
+## Install
 
-## Download
+Download **AngryBirds_1.2.0_Setup.exe** from [Releases](../../releases/latest) and run it.
+It needs no admin rights.
 
-One file. No zip, no unzipping twice:
+The game is registered in *Settings > Apps*, so it can be removed from there. The Start Menu
+carries an **Uninstall Angry Birds 1.2.0** shortcut as well. Uninstalling removes the game, your
+saves and settings, the shortcuts and the registry entries.
 
-```
-AngryBirds_1.2.0_Setup.exe
-```
-
-Double-click it and you get a normal Windows setup wizard — welcome page, folder picker,
-progress bar, Finish with a "start the game" checkbox. No console window, no "type Y to
-continue". It installs to `%LOCALAPPDATA%\AngryBirds1_2` (no admin rights, no UAC), creates the
-Desktop and Start Menu shortcuts and registers the app in *Settings → Apps*.
-
-Everything is inside that one file: the game, the uninstaller **and** the original
-`1.2.0.ipa` archive (9.4 MB of Rovio's artwork and audio, embedded at build time and written
-into the install folder). Nothing else to download, no zip, no separate asset step.
-Both the setup and the game ship with the Angry Birds icon and full file properties.
-
-Original game © Rovio Entertainment — this project only re-implements the engine in Rust.
-
-> Unsigned binaries: Windows SmartScreen will warn once. Click **More info → Run anyway**,
-> or right-click the file → *Properties* → *Unblock*.
-
-## Assets
-
-### `1.2.0.ipa` — committed, and embedded into the installer
-
-Every sprite, sound, font and texture comes from the original archive. It is kept in the
-repository root so the build can embed it, and `installer/build.rs` writes it into `setup.exe`.
-At runtime the game looks for it in this order:
-
-1. `1.2.0.ipa` next to the executable (recommended — what the release build uses)
-2. `1.2.0.ipa` in the working directory
-3. embedded in the binary, **only** if the crate was built with the `embed-assets` feature
-
-CI builds the game with `--no-default-features`, so the game binary itself stays 7 MB and reads
-the archive from its own folder; the installer is what carries the archive. Missing archive →
-the game exits with `1.2.0.ipa not found. Put the original 1.2.0.ipa next to the executable.`
-
-### `assets/gamedata.json` — included, and required to build
-
-3.3 MB of level and physics data: all 105 level layouts, block definitions, material properties
-and theme colours, exported from the game files by `tools/export_gamedata.lua` +
-`tools/convert_120.py`. `src/gamedata.rs` embeds it at compile time, so **a clone will not
-build without it** — it is the one game-derived file that is committed, because the source data
-inside the `.ipa` is compiled LuaQ bytecode that cannot be read without the original engine.
-
-If Rovio asks for it to be taken down, delete `assets/gamedata.json`; the rest of the repo is
-unaffected and the file can be regenerated by running the two scripts in `tools/` against a
-legitimate copy of the game.
-
-## Install / uninstall
-
-**Install:** run `AngryBirds_1.2.0_Setup.exe` — a standard NSIS wizard. Silent installs work
-too: `AngryBirds_1.2.0_Setup.exe /S`.
-
-**Uninstall**, any of:
-
-1. *Settings → Apps → Angry Birds 1.2.0 → Uninstall*
-2. `uninstall.exe` in the install folder
-
-Removed:
-
-| Location | Contents |
-|---|---|
-| `%LOCALAPPDATA%\AngryBirds1_2` | game, `.ipa`, uninstaller |
-| `%APPDATA%\AngryBirds1_2_Rust` | save data, stars, highscores, settings |
-| `HKCU\Software\Microsoft\Windows\CurrentVersion\Uninstall\AngryBirds1_2` | *Apps & features* entry |
-| `HKCU\Software\AngryBirds1_2` | settings key |
-| Desktop / Start Menu shortcuts | created by the installer |
-
-Nothing outside those paths is touched. Reinstalling starts from a clean save.
+> Unsigned binaries: Windows SmartScreen will warn once. Click **More info → Run anyway**, or
+> right-click the file → *Properties* → *Unblock*.
 
 ## Controls
 
@@ -107,67 +43,29 @@ Nothing outside those paths is touched. Reinstalling starts from a clean save.
 |---|---|
 | Drag the bird, release | aim and shoot |
 | Space / click | bird's special ability in flight |
-| Arrow keys, WASD, left-drag | pan the camera |
-| Mouse wheel | zoom in / out (whole level fits on screen when zoomed out) |
-| `[` / `]` | shrink / grow the interface |
+| Arrow keys, WASD, left drag | pan the camera |
+| Mouse wheel | zoom in and out (the whole level fits on screen when zoomed out) |
+| `[` / `]` | shrink or grow the interface |
 | `R` | restart level |
 | `Esc` / `P` | pause |
 | `Home` | recentre the camera |
 | `F11` | fullscreen |
 | `M` | mute |
 
-## Building
+## Assets
 
-```bash
-rustup target add x86_64-pc-windows-gnu
-sudo apt install gcc-mingw-w64-x86-64     # Linux cross compile
-
-# 1) the game (public/CI build: the .ipa is loaded at runtime)
-cargo build --release --no-default-features --target x86_64-pc-windows-gnu
-
-# 2) stage what the installer packs
-mkdir -p installer/payload
-cp target/x86_64-pc-windows-gnu/release/angry_birds_1_2.exe installer/payload/game.exe
-cp 1.2.0.ipa installer/payload/1.2.0.ipa
-cp README.txt installer/payload/README.txt
-
-# 3) one file out — needs NSIS: `sudo apt install nsis`
-cd installer && makensis angry_birds.nsi
-```
-
-Linux builds need `libasound2-dev`. On Windows drop `--target`.
-
-`1.2.0.ipa` sits in the repository root, so step 3 always produces the self-contained
-`AngryBirds_1.2.0_Setup.exe` (~11 MB, LZMA) that installs a fully playable game with no extra files.
-
-The icon and the version info come from `assets/angry_birds.rc`, compiled by the root
-`build.rs` with mingw's `windres` and linked into the game exe.
-
-## Code map
-
-| File | Lines | Purpose |
-|---|---|---|
-| `src/main.rs` | ~600 | window setup, screen state machine, asset loading |
-| `src/game.rs` | ~1340 | level session: camera, HUD, drawing, level flow |
-| `src/physics.rs` | ~1560 | Rapier world, birds/blocks/pigs, collisions, scoring |
-| `src/ui.rs` | ~1090 | splash, main menu, level select, credits, end screens |
-| `src/assets.rs` | ~790 | `.ipa` unpacking, sprite sheets, fonts, audio |
-| `src/gamedata.rs` | ~350 | level/theme data parsed from the game files |
-| `src/pvr.rs` | ~310 | PVR v2 texture decoding |
-| `src/save.rs` | ~150 | save file (JSON) |
-| `build.rs` | ~55 | compiles `assets/angry_birds.rc` so the exe has the bird icon + version info |
-| `installer/angry_birds.nsi` | ~150 | NSIS setup wizard: pages, shortcuts, `Settings → Apps` entry, uninstaller |
-| `installer/icon.ico` | — | multi-size icon (16→128 px) used by the setup and the game |
+The game is built using the original **1.2.0.ipa** archive, which supplies every sprite, sound,
+font and level layout. **1.2.0.ipa is copyrighted by Rovio Entertainment.**
 
 ## Credits
 
 Rebuilt in Rust by **Shohail Mahmud**
-Instagram [@shohailmahmud09](https://instagram.com/shohailmahmud09) · nirjonpc@gmail.com
+Instagram [@shohailmahmud09](https://instagram.com/shohailmahmud09) and nirjonpc@gmail.com
 
-Original game © Rovio Entertainment. This is a fan reimplementation for study and preservation.
+Original game by Rovio Entertainment. This is an unofficial fan project for study and
+preservation, with no affiliation to Rovio.
 
 ## License
 
-MIT for the code — see [LICENSE](LICENSE). It does not grant any rights to anything derived
-from the original game, including `assets/gamedata.json`, the game's names or its trademarks,
-which belong to Rovio Entertainment.
+MIT for this project's own code, see [LICENSE](LICENSE). It grants no rights to the original game,
+its assets, its names or its trademarks, which belong to Rovio Entertainment.v
