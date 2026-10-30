@@ -10,6 +10,11 @@ on:
 env:
   CARGO_TERM_COLOR: always
 
+# Two pushes in a row used to race for the same release asset; the last one to finish won.
+concurrency:
+  group: angry-birds-120-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   windows:
     name: Windows x64 single-file installer
@@ -63,22 +68,30 @@ jobs:
           name: AngryBirds-1.2.0-Setup
           path: AngryBirds_1.2.0_Setup.exe
 
-      - name: Attach to release
-        if: startsWith(github.ref, 'refs/tags/v')
+      # Publishing on push (not only on tags) is what puts a download button on the repo
+      # page: the release, and its AngryBirds_1.2.0_Setup.exe asset, appear by themselves.
+      # The tag is created automatically at the pushed commit if it does not exist yet.
+      - name: Publish release
+        if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
         uses: softprops/action-gh-release@v3
         with:
-          files: AngryBirds_1.2.0_Setup.exe
-          draft: true
+          tag_name: ${{ github.ref_type == 'tag' && github.ref_name || 'v1.2.0' }}
+          name: Angry Birds 1.2.0 (Windows 64-bit)
+          make_latest: true
+          draft: false
+          prerelease: false
           generate_release_notes: true
+          # Exactly one asset: the self-contained installer. No zip, no bare game exe.
+          files: AngryBirds_1.2.0_Setup.exe
           body: |
-            # Download **`AngryBirds_1.2.0_Setup.exe`** and run it. One file, no zip.
+            ## Download `AngryBirds_1.2.0_Setup.exe` and run it
 
-            The installer carries the game and the uninstaller inside it. It copies them to
-            `%LOCALAPPDATA%\AngryBirds1_2`, creates the Desktop and Start Menu shortcuts and
-            registers the app in *Settings → Apps*, where it can also be uninstalled.
+            One file, no zip. It installs the game, the uninstaller and the original
+            `1.2.0.ipa` game data to `%LOCALAPPDATA%\AngryBirds1_2`, creates the Desktop and
+            Start Menu shortcuts and registers the app in *Settings → Apps*, where it can also
+            be uninstalled. Nothing else to download — install and play, fully offline.
 
-            **You also need `1.2.0.ipa`** — Rovio's app, which cannot be shipped here.
-            Put it next to `AngryBirds_1.2.0_Setup.exe` before running, or pass its path when
-            the installer asks. It gets copied into the install folder.
+            > Unsigned binary: Windows SmartScreen may warn once → *More info → Run anyway*.
 
-            Unsigned binary: SmartScreen may warn once → *More info → Run anyway*.
+            Original game © Rovio Entertainment. Unofficial fan rebuild of the engine in Rust;
+            all artwork, audio, level design and trademarks belong to Rovio and are credited here.
