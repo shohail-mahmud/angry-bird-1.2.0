@@ -22,7 +22,7 @@ concurrency:
 
 jobs:
   windows:
-    name: Windows x64 single-file installer
+    name: Windows x64 installer (NSIS)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -52,21 +52,26 @@ jobs:
         continue-on-error: true
         run: cargo clippy --all-targets --no-default-features
 
-      # --no-default-features keeps Rovio's 1.2.0.ipa out of the binary, and the game then
-      # loads 1.2.0.ipa from its own folder at startup.
-      - name: Build game + uninstaller
+      # --no-default-features keeps Rovio's 1.2.0.ipa out of the game binary; the installer
+      # is what carries it, so players never have to supply anything.
+      - name: Build game
         run: cargo build --release --no-default-features --target x86_64-pc-windows-gnu
 
-      # The installer embeds both binaries, so they have to exist before it is compiled.
-      # Output is one file: AngryBirds_1.2.0_Setup.exe — no zip anywhere.
-      - name: Build single-file installer
+      - name: Install NSIS
+        run: sudo apt-get install -y nsis
+
+      # Produces one graphical setup wizard, AngryBirds_1.2.0_Setup.exe: welcome page,
+      # install folder, progress bar, Finish, and a real entry in Settings > Apps.
+      # The game, the uninstaller and 1.2.0.ipa all come along inside it.
+      - name: Build installer
         run: |
           mkdir -p installer/payload
           cp target/x86_64-pc-windows-gnu/release/angry_birds_1_2.exe installer/payload/game.exe
-          cp target/x86_64-pc-windows-gnu/release/uninstall.exe   installer/payload/uninstall.exe
-          cargo build --release --target x86_64-pc-windows-gnu -p angry_birds_setup
-          cp target/x86_64-pc-windows-gnu/release/setup.exe AngryBirds_1.2.0_Setup.exe
-          ls -l AngryBirds_1.2.0_Setup.exe
+          cp 1.2.0.ipa installer/payload/1.2.0.ipa
+          cp README.txt installer/payload/README.txt
+          cd installer && makensis angry_birds.nsi
+          cp AngryBirds_1.2.0_Setup.exe ../AngryBirds_1.2.0_Setup.exe
+          ls -l ../AngryBirds_1.2.0_Setup.exe
 
       - uses: actions/upload-artifact@v7
         with:
