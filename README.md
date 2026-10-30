@@ -8,10 +8,10 @@ from the game's own `.ipa` archive.
 ![Platform](https://img.shields.io/badge/platform-Windows%20x64-0078D6)
 ![License](https://img.shields.io/badge/license-MIT-green)
 
-> Unofficial fan project. *Angry Birds* and *Rovio* are trademarks of Rovio Entertainment.
-> No affiliation, no endorsement. **No artwork, audio, fonts or code from the original game is
-> committed here** — you supply your own `1.2.0.ipa` (see [Assets](#assets)). The single
-> Rovio-derived file is `assets/gamedata.json`, without which the crate cannot compile.
+> Unofficial fan project, made for preservation. *Angry Birds* and *Rovio* are trademarks of
+> Rovio Entertainment — all original artwork, audio, fonts and level design belong to them.
+> No affiliation and no endorsement is claimed, and everything here is credited to Rovio.
+> The installer is self-contained: **download one `.exe`, install, play.**
 
 ---
 
@@ -36,32 +36,36 @@ One file. No zip, no unzipping twice:
 AngryBirds_1.2.0_Setup.exe
 ```
 
-Double-click it. The installer carries the game **and** the uninstaller inside it, copies them
-to `%LOCALAPPDATA%\AngryBirds1_2`, creates the Desktop and Start Menu shortcuts and registers
-the app in *Settings → Apps*.
+Double-click it and you get a normal Windows setup wizard — welcome page, folder picker,
+progress bar, Finish with a "start the game" checkbox. No console window, no "type Y to
+continue". It installs to `%LOCALAPPDATA%\AngryBirds1_2` (no admin rights, no UAC), creates the
+Desktop and Start Menu shortcuts and registers the app in *Settings → Apps*.
 
-You also need `1.2.0.ipa` — it is **not** shipped, because it contains Rovio's copyrighted
-artwork and audio. Drop it next to `AngryBirds_1.2.0_Setup.exe` before running (it gets copied
-in automatically), or type its path when the installer asks for it.
-`gamedata.json` is compiled into the game already.
+Everything is inside that one file: the game, the uninstaller **and** the original
+`1.2.0.ipa` archive (9.4 MB of Rovio's artwork and audio, embedded at build time and written
+into the install folder). Nothing else to download, no zip, no separate asset step.
+Both the setup and the game ship with the Angry Birds icon and full file properties.
+
+Original game © Rovio Entertainment — this project only re-implements the engine in Rust.
 
 > Unsigned binaries: Windows SmartScreen will warn once. Click **More info → Run anyway**,
 > or right-click the file → *Properties* → *Unblock*.
 
 ## Assets
 
-### `1.2.0.ipa` — you supply it
+### `1.2.0.ipa` — committed, and embedded into the installer
 
-Every sprite, sound, font and texture is read out of the original archive at runtime, so the
-repository stays free of Rovio's artwork. Lookup order at startup:
+Every sprite, sound, font and texture comes from the original archive. It is kept in the
+repository root so the build can embed it, and `installer/build.rs` writes it into `setup.exe`.
+At runtime the game looks for it in this order:
 
 1. `1.2.0.ipa` next to the executable (recommended — what the release build uses)
 2. `1.2.0.ipa` in the working directory
 3. embedded in the binary, **only** if the crate was built with the `embed-assets` feature
 
-Build with `--no-default-features` (what CI does) and the archive never touches the repository
-or the executable. Missing archive → the game exits with
-`1.2.0.ipa not found. Put the original 1.2.0.ipa next to the executable.`
+CI builds the game with `--no-default-features`, so the game binary itself stays 7 MB and reads
+the archive from its own folder; the installer is what carries the archive. Missing archive →
+the game exits with `1.2.0.ipa not found. Put the original 1.2.0.ipa next to the executable.`
 
 ### `assets/gamedata.json` — included, and required to build
 
@@ -77,11 +81,8 @@ legitimate copy of the game.
 
 ## Install / uninstall
 
-**Install:** run `AngryBirds_1.2.0_Setup.exe`. It writes the game, the uninstaller and the
-readme to `%LOCALAPPDATA%\AngryBirds1_2`, adds a Desktop shortcut and a Start Menu folder, and
-registers the game in *Settings → Apps*. Re-running it upgrades in place.
-
-It also accepts flags for scripting: `--silent` (no prompts, no launch) and `--no-launch`.
+**Install:** run `AngryBirds_1.2.0_Setup.exe` — a standard NSIS wizard. Silent installs work
+too: `AngryBirds_1.2.0_Setup.exe /S`.
 
 **Uninstall**, any of:
 
@@ -121,25 +122,26 @@ Nothing outside those paths is touched. Reinstalling starts from a clean save.
 rustup target add x86_64-pc-windows-gnu
 sudo apt install gcc-mingw-w64-x86-64     # Linux cross compile
 
-# 1) the game + uninstaller (public/CI build: the .ipa is loaded at runtime)
+# 1) the game (public/CI build: the .ipa is loaded at runtime)
 cargo build --release --no-default-features --target x86_64-pc-windows-gnu
 
-# 2) the installer embeds those two binaries, so stage them first
+# 2) stage what the installer packs
 mkdir -p installer/payload
 cp target/x86_64-pc-windows-gnu/release/angry_birds_1_2.exe installer/payload/game.exe
-cp target/x86_64-pc-windows-gnu/release/uninstall.exe   installer/payload/uninstall.exe
+cp 1.2.0.ipa installer/payload/1.2.0.ipa
+cp README.txt installer/payload/README.txt
 
-# 3) one file out: setup.exe -> AngryBirds_1.2.0_Setup.exe
-cargo build --release --target x86_64-pc-windows-gnu -p angry_birds_setup
+# 3) one file out — needs NSIS: `sudo apt install nsis`
+cd installer && makensis angry_birds.nsi
 ```
 
 Linux builds need `libasound2-dev`. On Windows drop `--target`.
 
-**Want the truly single file that needs nothing else?** put `1.2.0.ipa` in the repository root
-(or `installer/payload/1.2.0.ipa`) before step 3 — `installer/build.rs` then bakes the archive
-into `setup.exe`, so the one `.exe` installs a fully playable game. Public builds never do this.
+`1.2.0.ipa` sits in the repository root, so step 3 always produces the self-contained
+`AngryBirds_1.2.0_Setup.exe` (~11 MB, LZMA) that installs a fully playable game with no extra files.
 
-Step 1 on its own still gives you `angry_birds_1_2.exe` + `uninstall.exe` for a portable folder.
+The icon and the version info come from `assets/angry_birds.rc`, compiled by the root
+`build.rs` with mingw's `windres` and linked into the game exe.
 
 ## Code map
 
@@ -153,9 +155,9 @@ Step 1 on its own still gives you `angry_birds_1_2.exe` + `uninstall.exe` for a 
 | `src/gamedata.rs` | ~350 | level/theme data parsed from the game files |
 | `src/pvr.rs` | ~310 | PVR v2 texture decoding |
 | `src/save.rs` | ~150 | save file (JSON) |
-| `src/uninstall.rs` | ~146 | standalone uninstaller (std only) |
-| `installer/src/main.rs` | ~330 | single-file installer: embeds game + uninstaller, writes files, shortcuts, registry (std only) |
-| `installer/build.rs` | ~90 | stages the payload, optionally bakes in `1.2.0.ipa` |
+| `build.rs` | ~55 | compiles `assets/angry_birds.rc` so the exe has the bird icon + version info |
+| `installer/angry_birds.nsi` | ~150 | NSIS setup wizard: pages, shortcuts, `Settings → Apps` entry, uninstaller |
+| `installer/icon.ico` | — | multi-size icon (16→128 px) used by the setup and the game |
 
 ## Credits
 
