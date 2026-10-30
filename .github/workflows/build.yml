@@ -15,7 +15,7 @@ jobs:
     name: Windows x64 (assets not embedded)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - uses: dtolnay/rust-toolchain@stable
         with:
@@ -25,7 +25,7 @@ jobs:
       - name: Install mingw
         run: sudo apt-get update && sudo apt-get install -y gcc-mingw-w64-x86-64
 
-      - uses: actions/cache@v4
+      - uses: actions/cache@v6
         with:
           path: |
             ~/.cargo/registry
@@ -55,14 +55,14 @@ jobs:
           cp INSTALL.bat README.txt dist/ 2>/dev/null || true
           cd dist && zip -r ../AngryBirds_1.2.0_Windows.zip .
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: AngryBirds-1.2.0-Windows
           path: AngryBirds_1.2.0_Windows.zip
 
       - name: Attach to release
         if: startsWith(github.ref, 'refs/tags/v')
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           files: AngryBirds_1.2.0_Windows.zip
           draft: true
